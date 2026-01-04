@@ -49,9 +49,17 @@
     .modal { display: none; position: fixed; inset: 0; background: rgba(92, 77, 97, 0.4); backdrop-filter: blur(5px); align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
     .modal-content { background: white; padding: 25px; border-radius: 30px; width: 100%; max-width: 450px; text-align: center; }
 
+    /* Новые стили для выбора оплаты */
+    .payment-selector { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+    .pay-btn { padding: 12px; border: 2px solid #eee; border-radius: 15px; cursor: pointer; font-weight: 700; transition: 0.2s; background: #fff; color: #ccc; }
+    .pay-btn.active { border-color: var(--accent); color: var(--accent); background: #fff5f7; }
+
     .report-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
     .btn-wa { background: #25D366; color: white; border: none; }
     .btn-xl { background: #217346; color: white; border: none; }
+
+    .totals-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; font-size: 12px; }
+    .total-box { background: #f9f9f9; padding: 10px; border-radius: 15px; text-align: center; }
   </style>
 </head>
 <body>
@@ -94,6 +102,12 @@
 <div id="sellPopup" class="modal"><div class="modal-content">
   <h3 id="sellTitle">Продажа</h3>
   <input id="sellQty" type="number" min="1" value="1" style="width:100%; text-align:center; margin-bottom:15px; border:1px solid #eee; border-radius:15px; padding:12px;">
+  
+  <div class="payment-selector">
+    <div id="payCash" class="pay-btn active" onclick="setPayment('cash')">💵 Наличные</div>
+    <div id="payCard" class="pay-btn" onclick="setPayment('card')">💳 Карта</div>
+  </div>
+
   <button class="btn-add" onclick="confirmSell()" style="width:100%">Списать</button>
   <button onclick="closeModal('sellPopup')" style="background:none; border:none; color:#aaa; margin-top:15px;">Отмена</button>
 </div></div>
@@ -104,23 +118,27 @@
   
   <div id="historyContent" style="max-height: 250px; overflow-y: auto; text-align: left;"></div>
   
+  <div class="totals-grid">
+    <div class="total-box">💵 Нал: <br><b id="totalCash">0</b> ֏</div>
+    <div class="total-box">💳 Карта: <br><b id="totalCard">0</b> ֏</div>
+  </div>
   <div style="margin-top:15px; font-weight:700; color:#d63384; font-size: 18px;">Итого: <span id="historyTotal">0</span> ֏</div>
 
   <div class="report-buttons">
     <button class="btn-secondary btn-wa" onclick="sendWhatsAppReport()">WhatsApp 💬</button>
     <button class="btn-secondary btn-xl" onclick="exportToExcel()">Excel 📊</button>
   </div>
-
   <button class="btn-add" onclick="closeModal('historyPopup')" style="width:100%; margin-top:20px">Закрыть</button>
 </div></div>
 
 <script>
-let items = JSON.parse(localStorage.getItem('souvenirs_v9')) || [];
-let sales = JSON.parse(localStorage.getItem('sales_v9')) || [];
+let items = JSON.parse(localStorage.getItem('souvenirs_v10')) || [];
+let sales = JSON.parse(localStorage.getItem('sales_v10')) || [];
 let currentIdx = null;
+let currentPayment = 'cash'; // по умолчанию наличные
 
-const save = () => localStorage.setItem('souvenirs_v9', JSON.stringify(items));
-const saveSales = () => localStorage.setItem('sales_v9', JSON.stringify(sales));
+const save = () => localStorage.setItem('souvenirs_v10', JSON.stringify(items));
+const saveSales = () => localStorage.setItem('sales_v10', JSON.stringify(sales));
 
 function render() {
   const container = document.getElementById('itemsList');
@@ -145,6 +163,13 @@ function render() {
   });
 }
 
+// Установка типа оплаты
+function setPayment(type) {
+  currentPayment = type;
+  document.getElementById('payCash').classList.toggle('active', type === 'cash');
+  document.getElementById('payCard').classList.toggle('active', type === 'card');
+}
+
 function openEdit(idx) {
   currentIdx = idx;
   const item = items[idx];
@@ -164,6 +189,7 @@ document.getElementById('editForm').onsubmit = e => {
 
 function openSell(idx) {
   currentIdx = idx;
+  setPayment('cash'); // Сброс на наличные при новом открытии
   document.getElementById('sellTitle').innerText = items[idx].name;
   document.getElementById('sellQty').value = 1;
   document.getElementById('sellPopup').style.display = 'flex';
@@ -177,7 +203,12 @@ function confirmSell() {
     item.quantity -= qty;
     const now = new Date();
     sales.unshift({
-      name: item.name, qty, before, after: item.quantity, total: qty * item.price,
+      name: item.name, 
+      qty, 
+      before, 
+      after: item.quantity, 
+      total: qty * item.price,
+      payment: currentPayment, // Сохраняем тип оплаты
       dateKey: now.toISOString().split('T')[0],
       dateDisplay: now.toLocaleDateString('ru-RU'),
       time: now.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})
@@ -196,65 +227,75 @@ function filterHistoryByDate() { updateHistoryUI(document.getElementById('histor
 
 function updateHistoryUI(filterDate = null) {
   const container = document.getElementById('historyContent');
-  let grandTotal = 0;
+  let grandTotal = 0, cashTotal = 0, cardTotal = 0;
   const filteredSales = filterDate ? sales.filter(s => s.dateKey === filterDate) : sales;
   
   container.innerHTML = filteredSales.length ? '' : '<p style="text-align:center; color:#ccc; padding:20px;">Нет данных</p>';
   
   filteredSales.forEach(s => {
     grandTotal += s.total;
+    if(s.payment === 'cash') cashTotal += s.total; else cardTotal += s.total;
+    
+    const payIcon = s.payment === 'cash' ? '💵' : '💳';
+    
     container.innerHTML += `
-      <div class="history-item">
-        <div style="display:flex; justify-content:space-between"><b>${s.name}</b> <span>${s.total} ֏</span></div>
+      <div class="history-item" style="padding:10px 0; border-bottom:1px solid #f9f9f9; font-size:13px;">
+        <div style="display:flex; justify-content:space-between">
+            <b>${payIcon} ${s.name}</b> 
+            <span>${s.total} ֏</span>
+        </div>
         <div style="font-size:11px; color:#999">${s.dateDisplay} ${s.time} • Было: ${s.before} → Стало: ${s.after} (${s.qty} шт)</div>
       </div>`;
   });
+  
   document.getElementById('historyTotal').innerText = grandTotal;
+  document.getElementById('totalCash').innerText = cashTotal;
+  document.getElementById('totalCard').innerText = cardTotal;
 }
 
-// ЭКСПОРТ В WHATSAPP
 function sendWhatsAppReport() {
   const filterDate = document.getElementById('historyDateFilter').value;
   const filteredSales = filterDate ? sales.filter(s => s.dateKey === filterDate) : sales;
-  
-  if (filteredSales.length === 0) return alert('Нет данных для отправки');
+  if (filteredSales.length === 0) return alert('Нет данных');
 
-  let text = `🌸 *Отчет по продажам (${filterDate || 'Все время'})* 🌸\n\n`;
-  let total = 0;
-  filteredSales.forEach(s => {
-    text += `🔹 ${s.name}: ${s.qty} шт. на ${s.total} ֏\n`;
-    total += s.total;
-  });
-  text += `\n💰 *Итого: ${total} ֏*`;
+  let total = 0, cash = 0, card = 0;
+  let text = `🌸 *Отчет (${filterDate || 'Все время'})* 🌸\n\n`;
   
-  const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
-  window.open(url, '_blank');
+  filteredSales.forEach(s => {
+    const icon = s.payment === 'cash' ? '💵' : '💳';
+    text += `${icon} ${s.name}: ${s.qty} шт - ${s.total} ֏\n`;
+    total += s.total;
+    if(s.payment === 'cash') cash += s.total; else card += s.total;
+  });
+
+  text += `\n---`;
+  text += `\n💵 Наличные: ${cash} ֏`;
+  text += `\n💳 Карта: ${card} ֏`;
+  text += `\n💰 *ИТОГО: ${total} ֏*`;
+  
+  window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
 }
 
-// ЭКСПОРТ В EXCEL
 function exportToExcel() {
   const filterDate = document.getElementById('historyDateFilter').value;
   const filteredSales = filterDate ? sales.filter(s => s.dateKey === filterDate) : sales;
-
-  if (filteredSales.length === 0) return alert('Нет данных для экспорта');
+  if (filteredSales.length === 0) return alert('Нет данных');
 
   const data = filteredSales.map(s => ({
     "Дата": s.dateDisplay,
-    "Время": s.time,
+    "Способ": s.payment === 'cash' ? "Наличные" : "Карта",
     "Товар": s.name,
     "Кол-во": s.qty,
-    "Сумма (֏)": s.total,
-    "Было": s.before,
-    "Стало": s.after
+    "Сумма": s.total
   }));
 
   const worksheet = XLSX.utils.json_to_sheet(data);
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, "Продажи");
-  XLSX.writeFile(workbook, `Отчет_Продажи_${filterDate || 'полный'}.xlsx`);
+  XLSX.writeFile(workbook, `Отчет_${filterDate || 'полный'}.xlsx`);
 }
 
-function deleteItem(idx) { if(confirm('Удалить товар?')) { items.splice(idx, 1); save(); render(); } }
+function deleteItem(idx) { if(confirm('Удалить?')) { items.splice(idx, 1); save(); render(); } }
 function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 
 document.getElementById('itemForm').onsubmit = e => {
