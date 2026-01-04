@@ -3,8 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>George's Сувениры</title>
+  <title>George's Сувениры — Учёт</title>
   <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
     :root {
       --accent: #ff85a2;
@@ -16,248 +17,150 @@
     }
 
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-
-    body {
-      font-family: 'Comfortaa', cursive;
-      background: var(--bg-gradient);
-      background-attachment: fixed;
-      color: var(--text);
-      margin: 0;
-      padding: 15px;
-      min-height: 100vh;
-    }
-
-    .container {
-      max-width: 500px;
-      margin: 0 auto;
-      animation: fadeIn 0.8s ease-out;
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
+    body { font-family: 'Comfortaa', cursive; background: var(--bg-gradient); background-attachment: fixed; color: var(--text); margin: 0; padding: 15px; min-height: 100vh; }
+    .container { max-width: 500px; margin: 0 auto; }
 
     header { text-align: center; margin-bottom: 20px; }
-    h1 { font-size: 26px; color: #d63384; margin: 10px 0; }
+    h1 { font-size: 22px; color: #d63384; margin: 10px 0; line-height: 1.4; }
 
-    .btn-glass {
-      background: var(--card-bg);
-      border: 2px solid var(--accent-soft);
-      color: var(--accent);
-      padding: 12px;
-      border-radius: 20px;
-      width: 100%;
-      font-weight: 700;
-      margin-bottom: 15px;
-      cursor: pointer;
-      transition: 0.3s;
-    }
+    .btn-glass { background: var(--card-bg); border: 2px solid var(--accent-soft); color: var(--accent); padding: 12px; border-radius: 20px; width: 100%; font-weight: 700; margin-bottom: 15px; cursor: pointer; transition: 0.3s; }
+    .btn-glass:active { transform: scale(0.98); background: var(--accent-soft); color: white; }
 
-    .btn-glass:active { transform: scale(0.96); background: var(--accent-soft); color: white; }
-
-    .card {
-      background: var(--card-bg);
-      backdrop-filter: blur(10px);
-      padding: 20px;
-      border-radius: 25px;
-      box-shadow: var(--shadow);
-      margin-bottom: 20px;
-      border: 1px solid rgba(255,255,255,0.5);
-    }
-
-    .search-box { margin-bottom: 15px; position: relative; }
-    .search-input {
-      width: 100%;
-      padding: 12px 15px 12px 40px;
-      border-radius: 18px;
-      border: 1px solid var(--accent-soft);
-      outline: none;
-      font-family: inherit;
-      background: rgba(255,255,255,0.8);
-    }
-    .search-icon { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); font-size: 14px; opacity: 0.5; }
-
+    .card { background: var(--card-bg); backdrop-filter: blur(10px); padding: 20px; border-radius: 25px; box-shadow: var(--shadow); margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.5); }
     form { display: grid; gap: 12px; }
-    input {
-      padding: 14px;
-      border: 1px solid #eee;
-      border-radius: 15px;
-      font-family: inherit;
-      outline: none;
-      background: #fff;
-    }
+    input { padding: 14px; border: 1px solid #eee; border-radius: 15px; font-family: inherit; outline: none; background: #fff; width: 100%; }
 
-    .btn-add {
-      background: linear-gradient(90deg, #ff85a2, #ff99ac);
-      color: white;
-      border: none;
-      padding: 14px;
-      border-radius: 15px;
-      font-weight: 700;
-      font-size: 16px;
-      cursor: pointer;
-    }
+    .btn-add { background: linear-gradient(90deg, #ff85a2, #ff99ac); color: white; border: none; padding: 14px; border-radius: 15px; font-weight: 700; font-size: 16px; cursor: pointer; }
+    .search-input { width: 100%; padding: 12px 15px; border-radius: 18px; border: 1px solid var(--accent-soft); outline: none; font-family: inherit; margin-bottom: 15px; }
 
-    .item-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 15px 0;
-      border-bottom: 1px dashed #eee;
-      animation: slideIn 0.3s ease-out forwards;
-    }
-
-    @keyframes slideIn {
-      from { opacity: 0; transform: scale(0.95); }
-      to { opacity: 1; transform: scale(1); }
-    }
-
-    .item-info b { font-size: 16px; display: block; margin-bottom: 2px; }
-    .item-info .qty-text { font-size: 13px; color: var(--text); font-weight: 600; }
-    .item-info .date-text { font-size: 10px; color: #aaa; display: block; margin-top: 4px; }
-
-    .price-badge {
-      background: #fff0f3;
-      color: #d63384;
-      padding: 5px 10px;
-      border-radius: 12px;
-      font-weight: 700;
-      margin-right: 10px;
-    }
+    .item-row { display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px dashed #eee; }
+    .item-info b { font-size: 15px; display: block; color: #d63384; }
+    .item-info span { font-size: 12px; color: #777; font-weight: 600; }
 
     .actions { display: flex; gap: 8px; }
-    .btn-circle {
-      width: 36px;
-      height: 36px;
-      border-radius: 50%;
-      border: none;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-    }
-
+    .btn-circle { width: 36px; height: 36px; border-radius: 50%; border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 14px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+    .btn-edit-mini { background: #ebf4ff; color: #3182ce; }
     .btn-sell-mini { background: #e6fffa; color: #38b2ac; }
     .btn-del-mini { background: #fff5f5; color: #feb2b2; }
 
-    .modal {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(92, 77, 97, 0.4);
-      backdrop-filter: blur(5px);
-      align-items: center;
-      justify-content: center;
-      z-index: 1000;
-      padding: 20px;
-    }
-    .modal-content {
-      background: white;
-      padding: 25px;
-      border-radius: 30px;
-      width: 100%;
-      max-width: 380px;
-      text-align: center;
-    }
+    .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.3); backdrop-filter: blur(4px); align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
+    .modal-content { background: white; padding: 25px; border-radius: 30px; width: 100%; max-width: 400px; text-align: center; }
 
-    /* Стили для истории */
-    .history-item {
-      padding: 12px 0;
-      border-bottom: 1px solid #f9f9f9;
-      font-size: 13px;
-    }
-    .history-flow {
-      background: #fdf2f8;
-      padding: 6px 10px;
-      border-radius: 10px;
-      display: inline-block;
-      margin-top: 5px;
-      font-size: 11px;
-      color: #d63384;
-    }
-    .history-flow b { color: #5c4d61; }
+    .payment-selector { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+    .pay-btn { padding: 12px; border: 2px solid #f0f0f0; border-radius: 15px; cursor: pointer; font-weight: 700; color: #ccc; }
+    .pay-btn.active { border-color: var(--accent); color: var(--accent); background: #fff5f7; }
+
+    .totals-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 15px 0; }
+    .total-box { background: #fef2f2; padding: 12px; border-radius: 15px; font-size: 12px; }
+    .total-box b { font-size: 14px; color: #d63384; }
+
+    .report-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
+    .btn-wa { background: #25D366; color: white; border: none; border-radius: 12px; padding: 10px; cursor: pointer; font-weight: 600; }
+    .btn-xl { background: #217346; color: white; border: none; border-radius: 12px; padding: 10px; cursor: pointer; font-weight: 600; }
+    .btn-clear { background: #fca5a5; color: white; border: none; margin-top: 20px; padding: 8px; border-radius: 10px; font-size: 11px; cursor: pointer; }
   </style>
 </head>
 <body>
 
 <div class="container">
   <header>
-    <h1>✨ у командира не спрашивают пароль 🐰 ✨</h1>
+    <h1>✨ у командира не спрашиваю пароль🐰✨</h1>
   </header>
 
-  <button class="btn-glass" onclick="openHistory()">💕 История продаж</button>
+  <button class="btn-glass" onclick="openHistory()">📅 Журнал продаж & Отчеты</button>
 
   <div class="card">
     <form id="itemForm">
       <input id="name" placeholder="Название сувенира" required>
       <div style="display: flex; gap: 10px;">
-        <input id="quantity" type="number" min="0" placeholder="Кол-во" style="width: 40%;" required>
-        <input id="price" type="number" min="0" step="1" placeholder="Цена (֏)" style="width: 60%;">
+        <input id="quantity" type="number" min="0" placeholder="Кол-во" required>
+        <input id="price" type="number" min="0" placeholder="Цена (֏)">
       </div>
       <button type="submit" class="btn-add">✨ Добавить товар</button>
     </form>
   </div>
 
-  <div class="search-box">
-    <span class="search-icon">🔍</span>
-    <input type="text" id="searchInput" class="search-input" placeholder="Найти сувенир..." oninput="render()">
-  </div>
-
+  <input type="text" id="searchInput" class="search-input" placeholder="🔍 Найти в списке..." oninput="render()">
   <div class="card" id="itemsList"></div>
 </div>
 
 <div id="sellPopup" class="modal"><div class="modal-content">
-  <h3 id="sellTitle">Списать</h3>
-  <input id="sellQty" type="number" min="1" value="1" style="width:100%; text-align:center; margin-bottom:15px; border:1px solid #eee; border-radius:10px; padding:10px;">
-  <button class="btn-add" onclick="confirmSell()" style="width:100%">Списать</button>
-  <button onclick="closeModal('sellPopup')" style="background:none; border:none; color:#aaa; margin-top:15px;">Отмена</button>
+  <h3 id="sellTitle">Продажа</h3>
+  <input id="sellQty" type="number" min="1" value="1" style="text-align:center; margin-bottom:15px; font-size: 18px;">
+  <div class="payment-selector">
+    <div id="payCash" class="pay-btn active" onclick="setPayment('cash')">💵 Нал</div>
+    <div id="payCard" class="pay-btn" onclick="setPayment('card')">💳 Карта</div>
+  </div>
+  <button class="btn-add" onclick="confirmSell()" style="width:100%">Подтвердить</button>
+  <button onclick="closeModal('sellPopup')" style="background:none; border:none; color:#aaa; margin-top:15px; cursor:pointer;">Отмена</button>
 </div></div>
 
 <div id="historyPopup" class="modal"><div class="modal-content" style="max-width: 450px;">
-  <h3>💖 Продажи</h3>
-  <div id="historyTable" style="max-height: 350px; overflow-y: auto; text-align: left;"></div>
-  <div style="margin-top:15px; font-weight:700; color:#d63384; font-size: 18px;">Итого: <span id="historyTotal">0</span> ֏</div>
-  <button class="btn-add" onclick="closeModal('historyPopup')" style="width:100%; margin-top:20px">Закрыть</button>
+  <h3>📊 История продаж</h3>
+  <input type="date" id="historyDateFilter" onchange="filterHistoryByDate()" style="margin-bottom:10px;">
+  
+  <div id="historyContent" style="max-height: 250px; overflow-y: auto; text-align: left; border-top: 1px solid #eee;"></div>
+  
+  <div class="totals-grid">
+    <div class="total-box">💵 Нал:<br><b id="totalCash">0</b> ֏</div>
+    <div class="total-box">💳 Карты:<br><b id="totalCard">0</b> ֏</div>
+  </div>
+  <div style="font-weight:700; color:#d63384; font-size: 20px;">Итого: <span id="historyTotal">0</span> ֏</div>
+
+  <div class="report-buttons">
+    <button class="btn-wa" onclick="sendWhatsAppReport()">WhatsApp</button>
+    <button class="btn-xl" onclick="exportToExcel()">Excel</button>
+  </div>
+
+  <button class="btn-clear" onclick="clearSalesHistory()">🗑️ Очистить историю</button>
+  <button class="btn-add" onclick="closeModal('historyPopup')" style="width:100%; margin-top:15px; background: #5c4d61;">Закрыть</button>
 </div></div>
 
 <script>
-let items = JSON.parse(localStorage.getItem('souvenirs_v5')) || [];
-let sales = JSON.parse(localStorage.getItem('sales_v5')) || [];
+// ЗАГРУЗКА ДАННЫХ ПРИ СТАРТЕ
+let items = JSON.parse(localStorage.getItem('george_stock_v11')) || [];
+let sales = JSON.parse(localStorage.getItem('george_sales_v11')) || [];
 let currentIdx = null;
+let currentPayment = 'cash';
 
-const save = () => localStorage.setItem('souvenirs_v5', JSON.stringify(items));
-const saveSales = () => localStorage.setItem('sales_v5', JSON.stringify(sales));
+// СОХРАНЕНИЕ ДАННЫХ
+const saveAll = () => {
+  localStorage.setItem('george_stock_v11', JSON.stringify(items));
+  localStorage.setItem('george_sales_v11', JSON.stringify(sales));
+};
 
 function render() {
   const container = document.getElementById('itemsList');
   const query = document.getElementById('searchInput').value.toLowerCase();
-  
   const filtered = items.map((item, originalIndex) => ({...item, originalIndex}))
                         .filter(item => item.name.toLowerCase().includes(query));
 
-  container.innerHTML = filtered.length ? '' : '<p style="text-align:center; color:#ccc; font-size:13px;">Ничего не найдено...</p>';
-  
+  container.innerHTML = filtered.length ? '' : '<p style="text-align:center; color:#ccc;">Товаров пока нет</p>';
   filtered.forEach((item) => {
     container.innerHTML += `
       <div class="item-row">
         <div class="item-info">
           <b>${item.name}</b>
-          <span class="qty-text">Остаток: ${item.quantity} шт.</span>
-          <span class="date-text">Добавлен: ${item.addedAt || 'ранее'}</span>
+          <span>${item.quantity} шт • ${item.price} ֏</span>
         </div>
         <div class="actions">
-          <span class="price-badge">${item.price} ֏</span>
           <button class="btn-circle btn-sell-mini" onclick="openSell(${item.originalIndex})">💸</button>
           <button class="btn-circle btn-del-mini" onclick="deleteItem(${item.originalIndex})">✕</button>
         </div>
-      </div>
-    `;
+      </div>`;
   });
+}
+
+// ПРОДАЖА
+function setPayment(type) {
+  currentPayment = type;
+  document.getElementById('payCash').classList.toggle('active', type === 'cash');
+  document.getElementById('payCard').classList.toggle('active', type === 'card');
 }
 
 function openSell(idx) {
   currentIdx = idx;
+  setPayment('cash');
   document.getElementById('sellTitle').innerText = items[idx].name;
   document.getElementById('sellQty').value = 1;
   document.getElementById('sellPopup').style.display = 'flex';
@@ -266,67 +169,99 @@ function openSell(idx) {
 function confirmSell() {
   const qty = +document.getElementById('sellQty').value;
   const item = items[currentIdx];
-  
   if (qty > 0 && qty <= item.quantity) {
     const before = item.quantity;
     item.quantity -= qty;
-    const after = item.quantity;
-
-    sales.unshift({ 
-      name: item.name, 
-      qty, 
-      before,
-      after,
-      total: qty * item.price, 
-      date: new Date().toLocaleString([], {day: '2-digit', month: '2-digit', hour: '2-digit', minute:'2-digit'}) 
+    const now = new Date();
+    sales.unshift({
+      name: item.name, qty, before, after: item.quantity, total: qty * item.price,
+      payment: currentPayment,
+      dateKey: now.toISOString().split('T')[0],
+      dateDisplay: now.toLocaleDateString('ru-RU'),
+      time: now.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})
     });
-
-    save(); saveSales(); render(); closeModal('sellPopup');
-  } else { alert('Ошибка: недостаточно товара!'); }
+    saveAll(); render(); closeModal('sellPopup');
+  } else { alert('Недостаточно товара!'); }
 }
 
+// ИСТОРИЯ
 function openHistory() {
-  let total = 0;
-  document.getElementById('historyTable').innerHTML = sales.map(s => {
-    total += s.total;
-    return `
-      <div class="history-item">
-        <div style="display:flex; justify-content:space-between">
-          <b>${s.name}</b>
-          <span style="font-weight:700">${s.total} ֏</span>
-        </div>
-        <div class="history-flow">
-          Было: <b>${s.before}</b> → Продано: <b>${s.qty}</b> → Стало: <b>${s.after}</b>
-        </div>
-        <div style="margin-top:4px"><small style="color:#ccc">${s.date}</small></div>
-      </div>`;
-  }).join('');
-  document.getElementById('historyTotal').innerText = total;
+  document.getElementById('historyDateFilter').value = '';
+  updateHistoryUI();
   document.getElementById('historyPopup').style.display = 'flex';
 }
 
-function deleteItem(idx) {
-  if(confirm('Удалить товар навсегда?')) { items.splice(idx, 1); save(); render(); }
+function filterHistoryByDate() { updateHistoryUI(document.getElementById('historyDateFilter').value); }
+
+function updateHistoryUI(filterDate = null) {
+  const container = document.getElementById('historyContent');
+  let grandTotal = 0, cashT = 0, cardT = 0;
+  const filteredSales = filterDate ? sales.filter(s => s.dateKey === filterDate) : sales;
+  
+  container.innerHTML = filteredSales.length ? '' : '<p style="text-align:center; color:#ccc; padding:20px;">История пуста</p>';
+  
+  filteredSales.forEach(s => {
+    grandTotal += s.total;
+    if(s.payment === 'cash') cashT += s.total; else cardT += s.total;
+    const icon = s.payment === 'cash' ? '💵' : '💳';
+    container.innerHTML += `
+      <div style="padding:8px 0; border-bottom:1px solid #eee; font-size:12px;">
+        <div style="display:flex; justify-content:space-between"><b>${icon} ${s.name}</b> <b>${s.total} ֏</b></div>
+        <div style="color:#999">${s.dateDisplay} ${s.time} • ${s.qty} шт.</div>
+      </div>`;
+  });
+  
+  document.getElementById('historyTotal').innerText = grandTotal;
+  document.getElementById('totalCash').innerText = cashT;
+  document.getElementById('totalCard').innerText = cardT;
 }
 
+// ОТЧЕТЫ
+function sendWhatsAppReport() {
+  const filterDate = document.getElementById('historyDateFilter').value;
+  const filtered = filterDate ? sales.filter(s => s.dateKey === filterDate) : sales;
+  if(!filtered.length) return alert('Нет данных');
+  let text = `📦 Отчет George's (${filterDate || 'Все время'})\n\n`;
+  let total = 0;
+  filtered.forEach(s => {
+    text += `${s.payment === 'cash' ? '💵' : '💳'} ${s.name}: ${s.qty}шт = ${s.total}֏\n`;
+    total += s.total;
+  });
+  text += `\n💰 ИТОГО: ${total} ֏`;
+  window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+}
+
+function exportToExcel() {
+  const data = sales.map(s => ({"Дата": s.dateDisplay, "Товар": s.name, "Кол-во": s.qty, "Сумма": s.total, "Тип": s.payment}));
+  const ws = XLSX.utils.json_to_sheet(data);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Sales");
+  XLSX.writeFile(wb, "Report.xlsx");
+}
+
+function clearSalesHistory() {
+  if(confirm('ВНИМАНИЕ! Вы хотите полностью очистить всю историю продаж? Это действие нельзя отменить.')) {
+    sales = [];
+    saveAll();
+    updateHistoryUI();
+  }
+}
+
+function deleteItem(idx) { if(confirm('Удалить товар из базы?')) { items.splice(idx, 1); saveAll(); render(); } }
 function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 
 document.getElementById('itemForm').onsubmit = e => {
   e.preventDefault();
-  const now = new Date();
-  const timeStr = now.toLocaleDateString([], {day: '2-digit', month: '2-digit'}) + ' ' + now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-  
   items.push({
     name: document.getElementById('name').value,
     quantity: +document.getElementById('quantity').value,
-    price: +document.getElementById('price').value || 0,
-    addedAt: timeStr
+    price: +document.getElementById('price').value || 0
   });
-  save(); render(); e.target.reset();
+  saveAll(); render(); e.target.reset();
 };
 
+// ИНИЦИАЛИЗАЦИЯ ПРИ ЗАГРУЗКЕ
 render();
 </script>
-
 </body>
 </html>
