@@ -84,6 +84,19 @@
   <div class="card" id="itemsList"></div>
 </div>
 
+<div id="editPopup" class="modal"><div class="modal-content">
+  <h3>📝 Редактировать товар</h3>
+  <form id="editForm">
+    <input id="editName" placeholder="Название" required>
+    <div style="display: flex; gap: 10px;">
+      <input id="editQuantity" type="number" min="0" placeholder="Кол-во" required>
+      <input id="editPrice" type="number" min="0" placeholder="Цена (֏)">
+    </div>
+    <button type="submit" class="btn-add">Сохранить изменения</button>
+  </form>
+  <button onclick="closeModal('editPopup')" style="background:none; border:none; color:#aaa; margin-top:15px; cursor:pointer;">Отмена</button>
+</div></div>
+
 <div id="sellPopup" class="modal"><div class="modal-content">
   <h3 id="sellTitle">Продажа</h3>
   <input id="sellQty" type="number" min="1" value="1" style="text-align:center; margin-bottom:15px; font-size: 18px;">
@@ -117,16 +130,14 @@
 </div></div>
 
 <script>
-// ЗАГРУЗКА ДАННЫХ ПРИ СТАРТЕ
-let items = JSON.parse(localStorage.getItem('george_stock_v11')) || [];
-let sales = JSON.parse(localStorage.getItem('george_sales_v11')) || [];
+let items = JSON.parse(localStorage.getItem('george_stock_v12')) || [];
+let sales = JSON.parse(localStorage.getItem('george_sales_v12')) || [];
 let currentIdx = null;
 let currentPayment = 'cash';
 
-// СОХРАНЕНИЕ ДАННЫХ
 const saveAll = () => {
-  localStorage.setItem('george_stock_v11', JSON.stringify(items));
-  localStorage.setItem('george_sales_v11', JSON.stringify(sales));
+  localStorage.setItem('george_stock_v12', JSON.stringify(items));
+  localStorage.setItem('george_sales_v12', JSON.stringify(sales));
 };
 
 function render() {
@@ -144,12 +155,33 @@ function render() {
           <span>${item.quantity} шт • ${item.price} ֏</span>
         </div>
         <div class="actions">
+          <button class="btn-circle btn-edit-mini" onclick="openEdit(${item.originalIndex})">📝</button>
           <button class="btn-circle btn-sell-mini" onclick="openSell(${item.originalIndex})">💸</button>
           <button class="btn-circle btn-del-mini" onclick="deleteItem(${item.originalIndex})">✕</button>
         </div>
       </div>`;
   });
 }
+
+// РЕДАКТИРОВАНИЕ ТОВАРА
+function openEdit(idx) {
+  currentIdx = idx;
+  const item = items[idx];
+  document.getElementById('editName').value = item.name;
+  document.getElementById('editQuantity').value = item.quantity;
+  document.getElementById('editPrice').value = item.price;
+  document.getElementById('editPopup').style.display = 'flex';
+}
+
+document.getElementById('editForm').onsubmit = (e) => {
+  e.preventDefault();
+  items[currentIdx].name = document.getElementById('editName').value;
+  items[currentIdx].quantity = parseInt(document.getElementById('editQuantity').value);
+  items[currentIdx].price = parseInt(document.getElementById('editPrice').value) || 0;
+  saveAll();
+  render();
+  closeModal('editPopup');
+};
 
 // ПРОДАЖА
 function setPayment(type) {
@@ -240,7 +272,7 @@ function exportToExcel() {
 }
 
 function clearSalesHistory() {
-  if(confirm('ВНИМАНИЕ! Вы хотите полностью очистить всю историю продаж? Это действие нельзя отменить.')) {
+  if(confirm('ВНИМАНИЕ! Вы хотите полностью очистить всю историю продаж?')) {
     sales = [];
     saveAll();
     updateHistoryUI();
@@ -254,13 +286,12 @@ document.getElementById('itemForm').onsubmit = e => {
   e.preventDefault();
   items.push({
     name: document.getElementById('name').value,
-    quantity: +document.getElementById('quantity').value,
-    price: +document.getElementById('price').value || 0
+    quantity: parseInt(document.getElementById('quantity').value),
+    price: parseInt(document.getElementById('price').value) || 0
   });
   saveAll(); render(); e.target.reset();
 };
 
-// ИНИЦИАЛИЗАЦИЯ ПРИ ЗАГРУЗКЕ
 render();
 </script>
 </body>
